@@ -137,7 +137,6 @@ pl_nxt_games = pd.read_csv("nba_players_next_game.csv")
 #!pip install chardet
 #!pip install gitpython
 #!pip install unidecode
-import chardet
 def name_cleaner(name):
   spaces = 0
   n = 0
@@ -152,18 +151,21 @@ def name_cleaner(name):
   return name.lower()
 
 def get_nba_players_salaries(csv_file_path):
-  #import git
-  #import os.path
-  #from os import path
+  import git
+  import os.path
+  from os import path
   import pandas as pd
   from unidecode import unidecode
 
-  #-------------Github-----------------
-  #repo_path = "NBA5/"
-  #if not path.exists(repo_path):
-  #  repo = git.Repo.clone_from('https://github.com/Parac3lsus/Sprint1.git', 'NBA5')
-  #csv_file_path = "NBA5/" + csv_file_path
+  #-------------Github-----------------#
+  repo_path = "NBA/"
+  if not path.exists(repo_path):
+    repo=git.Repo.clone_from('https://github.com/Parac3lsus/Sprint1.git', 'NBA')
+    print("getting repo")
 
+  csv_file_path = repo_path + csv_file_path
+  print(csv_file_path)
+  # -------------Github-----------------#
   salaries = pd.read_csv(csv_file_path, encoding='utf-8')
   salaries = salaries.drop_duplicates(subset=['Unnamed: 1'])
   salaries[['Player2', 'Discard']] = salaries['Unnamed: 1'].str.split('\\', expand=True)
@@ -173,21 +175,8 @@ def get_nba_players_salaries(csv_file_path):
   salaries = salaries.rename(columns ={'Player2':'PLAYER_NAME','Salary':'SALARY'}, inplace= False)
   salaries['SALARY'] = salaries['SALARY'].str.replace('$', '')
   salaries['SALARY'] = salaries['SALARY'].str.replace('?', '')
-  #salaries['SALARY'] = salaries['SALARY'].astype('int64')
   salaries = salaries.fillna(0)
-  # salaries['2021-22'] = salaries['2021-22'].astype('int64')
-  # salaries['Player'] = salaries['Player'].astype('string')
-  # salaries['Player'] = salaries['Player'].apply(unidecode)
-
-  # for i, row in salaries.iterrows():
-  #   try:
-  #     salaries.loc[i, 'PLAYER_ID'] = int(players_personal_info.index[players_personal_info['PLAYER_NAME'] == row['Player_NAME']][0])
-  #   except:
-  #     deleted_player = salaries.loc[i, 'PLAYER_NAME']
-  #     salaries = salaries.drop(index=i)
-  #     print(f'{deleted_player} is not active. Player deleted')
-  #     pass
-
+  salaries['SALARY'] = salaries['SALARY'].astype('int64')
   salaries['PLAYER_ID'] = 0
   print(len(salaries.index))
   for i, row in salaries.iterrows():
@@ -195,22 +184,7 @@ def get_nba_players_salaries(csv_file_path):
       if(name_cleaner(unidecode(row.PLAYER_NAME)) == name_cleaner(unidecode(players_row.PLAYER_NAME))):
         salaries.loc[i, 'PLAYER_ID'] = int(players_row.PERSON_ID)
         break
-
-
-
-      #if row.Player == players_row['PERSON_ID']:
-      #  salaries.loc[i, 'Player_ID'] = players_row.PERSON_ID
-  #for i, row in salaries.iterrows():
-  #  try:
-  #    salaries.loc[i, 'PLAYER_ID'] = int(players_personal_info.index[players_personal_info['PLAYER_NAME'] == row['Player']][0])
-  #    #salaries.loc[i, 'PLAYER_ID'] = players_personal_info.index[name_cleaner(players_personal_info['PLAYER_NAME']) == name_cleaner(row['Player'])][0]
-  #    #salaries.loc[i, 'PLAYER_ID'] = players_personal_info.index[players_personal_info['PLAYER_NAME'] == name_clear][0]
-  #  except:
-  #    pass
-
-
   salaries = salaries[salaries['PLAYER_ID']!=0]
-  # salaries = salaries.drop_duplicates(subset='PLAYER_ID')
   print(len(salaries.index))
   return salaries
 
