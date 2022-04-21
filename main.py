@@ -122,6 +122,7 @@ def get_players_next_game(current_players_list):
 
   all_players_next_game['GAME_DATE']=pd.to_datetime(all_players_next_game['GAME_DATE'])
   all_players_next_game.set_index('PLAYER_ID', inplace=True)
+  print("HOLAAAA")
   return all_players_next_game
 
 current_players_list = pd.read_csv("nba_current_players_list.csv")
@@ -129,7 +130,7 @@ current_players_list = current_players_list.drop(['Unnamed: 0'], axis=1)
 players_next_game = get_players_next_game(current_players_list)
 print("Done")
 players_next_game.to_csv("nba_players_next_game.csv")
-
+#NO BORRO NADA
 # ================================================================================================================================== #
 # ### Complete in this cell: find players salary, save the information to csv
 #!pip install chardet
