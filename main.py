@@ -193,11 +193,9 @@ players_salaries.to_csv("nba_players_salary.csv")
 
 # ================================================================================================================================== #
 def merge_dataframes(personal_info, career_stats, next_game, salaries):
-  raw_players_dataset = pd.merge(personal_info, career_stats, on='PLAYER_ID')
-  raw_players_dataset = pd.merge(raw_players_dataset, next_game, on='PLAYER_ID')
-  raw_players_dataset = pd.merge(raw_players_dataset, salaries, on='PLAYER_ID')
-  raw_players_dataset.rename(columns={'PLAYER_NAME_x': 'PLAYER_MAME'}, inplace = True)
-  raw_players_dataset = raw_players_dataset.drop(['PLAYER_NAME_y'], axis=1)
+  raw_players_dataset = pd.merge(personal_info, career_stats, on='PLAYER_ID', how='left')
+  raw_players_dataset = pd.merge(raw_players_dataset, next_game, on='PLAYER_ID', how='left')
+  raw_players_dataset = pd.merge(raw_players_dataset, salaries, on='PLAYER_ID', how='left')
   return raw_players_dataset
 
 import pandas as pd
