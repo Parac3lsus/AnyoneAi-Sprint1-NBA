@@ -122,7 +122,6 @@ def get_players_next_game(current_players_list):
 
   all_players_next_game['GAME_DATE']=pd.to_datetime(all_players_next_game['GAME_DATE'])
   all_players_next_game.set_index('PLAYER_ID', inplace=True)
-  print("HOLAAAA")
   return all_players_next_game
 
 current_players_list = pd.read_csv("nba_current_players_list.csv")
@@ -130,7 +129,9 @@ current_players_list = current_players_list.drop(['Unnamed: 0'], axis=1)
 players_next_game = get_players_next_game(current_players_list)
 print("Done")
 players_next_game.to_csv("nba_players_next_game.csv")
-#NO BORRO NADA
+# ================================================================================================================================== #
+import pandas as pd
+pl_nxt_games = pd.read_csv("nba_players_next_game.csv")
 # ================================================================================================================================== #
 # ### Complete in this cell: find players salary, save the information to csv
 #!pip install chardet
@@ -146,9 +147,9 @@ def name_cleaner(name):
       spaces += 1
     if spaces > 1:
       output_name = name[:n]
-      return output_name
+      return output_name.lower()
     n += 1
-  return name
+  return name.lower()
 
 def get_nba_players_salaries(csv_file_path):
   #import git
@@ -163,11 +164,6 @@ def get_nba_players_salaries(csv_file_path):
   #  repo = git.Repo.clone_from('https://github.com/Parac3lsus/Sprint1.git', 'NBA5')
   #csv_file_path = "NBA5/" + csv_file_path
 
-  with open(csv_file_path, 'rb') as f:
-    enc = chardet.detect(f.read())
-  pass
-
-  #salaries = pd.read_csv(csv_file_path, encoding=enc['encoding'])
   salaries = pd.read_csv(csv_file_path, encoding='utf-8')
   salaries = salaries.drop_duplicates(subset=['Unnamed: 1'])
   salaries[['Player2', 'Discard']] = salaries['Unnamed: 1'].str.split('\\', expand=True)
@@ -182,27 +178,23 @@ def get_nba_players_salaries(csv_file_path):
   # salaries['2021-22'] = salaries['2021-22'].astype('int64')
   # salaries['Player'] = salaries['Player'].astype('string')
   # salaries['Player'] = salaries['Player'].apply(unidecode)
-  #
-  players_personal_info = pd.read_csv("nba_players_personal_info.csv")
-  players_personal_info.set_index("PERSON_ID")
 
-  for i, row in salaries.iterrows():
-    try:
-      salaries.loc[i, 'PLAYER_ID'] = int(
-        players_personal_info.index[players_personal_info['PLAYER_NAME'] == row['Player_NAME']][0])
-    except:
-      deleted_player = salaries.loc[i, 'PLAYER_NAME']
-      salaries = salaries.drop(index=i)
-      print(f'{deleted_player} is not active. Player deleted')
-      pass
-
-  # salaries['PLAYER_ID'] = 0
-  # print(len(salaries.index))
   # for i, row in salaries.iterrows():
-  #   for n, players_row in players_personal_info.iterrows():
-  #     if(name_cleaner(unidecode(row.PLAYER_NAME)) == name_cleaner(unidecode(players_row.PLAYER_NAME))):
-  #       salaries.loc[i, 'PLAYER_ID'] = int(players_row.PERSON_ID)
-  #       break
+  #   try:
+  #     salaries.loc[i, 'PLAYER_ID'] = int(players_personal_info.index[players_personal_info['PLAYER_NAME'] == row['Player_NAME']][0])
+  #   except:
+  #     deleted_player = salaries.loc[i, 'PLAYER_NAME']
+  #     salaries = salaries.drop(index=i)
+  #     print(f'{deleted_player} is not active. Player deleted')
+  #     pass
+
+  salaries['PLAYER_ID'] = 0
+  print(len(salaries.index))
+  for i, row in salaries.iterrows():
+    for n, players_row in players_personal_info.iterrows():
+      if(name_cleaner(unidecode(row.PLAYER_NAME)) == name_cleaner(unidecode(players_row.PLAYER_NAME))):
+        salaries.loc[i, 'PLAYER_ID'] = int(players_row.PERSON_ID)
+        break
 
 
 
@@ -224,13 +216,6 @@ def get_nba_players_salaries(csv_file_path):
 
 import pandas as pd
 players_personal_info = pd.read_csv("nba_players_personal_info.csv")
-#
-# import chardet
-#
-# with open("contracts.csv", 'rb') as f:
-#   enc = chardet.detect(f.read())
-# pass
-# salaries = pd.read_csv("contracts.csv", encoding=enc['encoding'])
-
+players_personal_info.set_index("PERSON_ID")
 players_salaries = get_nba_players_salaries("contracts.csv")
 players_salaries.to_csv("nba_players_salary.csv")
