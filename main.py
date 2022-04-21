@@ -16,63 +16,57 @@ def get_and_save_players_list():
   players = commonallplayers.CommonAllPlayers(is_only_current_season =1).get_data_frames()[0]
   players = players[ (players["TEAM_NAME"]!="") & (players["GAMES_PLAYED_FLAG"]!="N") & (players["PERSON_ID"]!=1630597)]
   players = players[["PERSON_ID","DISPLAY_FIRST_LAST","TEAM_NAME"]]
-  print(players.head())
-  print(players.tail())
+  players.rename(columns={'DISPLAY_FIRST_LAST': 'PLAYER_NAME'}, inplace=True)
+  players.rename(columns ={'PERSON_ID':'PLAYER_ID'}, inplace = True)
   return players
-
+# ================================================================================================================================== #
 current_players_list = get_and_save_players_list()
 current_players_list.to_csv("nba_current_players_list.csv")
+# ================================================================================================================================== #
+
+
 
 # # ================================================================================================================================== #
 def clean_players_personal_information(players_list):
-  players_list = players_list.drop(['DISPLAY_FIRST_LAST', 'DISPLAY_LAST_COMMA_FIRST', 'DISPLAY_FI_LAST', 'PLAYER_SLUG',
-                                    'SCHOOL', 'LAST_AFFILIATION', 'SEASON_EXP', 'JERSEY', 'ROSTERSTATUS', 'TEAM_ID',
-                                  'TEAM_ABBREVIATION', 'TEAM_CODE', 'TEAM_CITY', 'PLAYERCODE', 'DLEAGUE_FLAG',
-                                  'NBA_FLAG', 'GAMES_PLAYED_FLAG', 'DRAFT_YEAR', 'DRAFT_ROUND', 'GREATEST_75_FLAG',
-                                  'GAMES_PLAYED_CURRENT_SEASON_FLAG'], axis=1)
-  players_list['PLAYER_NAME'] = players_list['FIRST_NAME'] + ' ' + players_list[
-    'LAST_NAME']
+  players_list['PLAYER_NAME'] = players_list['FIRST_NAME'] + ' ' + players_list['LAST_NAME']
   players_list = players_list.drop(['FIRST_NAME', 'LAST_NAME'], axis=1)
-  players_list.set_index('PERSON_ID', inplace=True)
+  players_list.rename(columns={'PERSON_ID': 'PLAYER_ID'}, inplace=True)
   aux_player_names = list(players_list.loc[:, 'PLAYER_NAME'])
   players_list.insert(0, 'PLAYER_NAME', aux_player_names, allow_duplicates=True)
   players_list = players_list.iloc[:, 0:-1]
   players_list['SEASON_EXP'] = players_list['TO_YEAR'] - players_list['FROM_YEAR']
-  players_list = players_list[["PLAYER_NAME", "TEAM_NAME", "POSITION", "HEIGHT", "WEIGHT", "COUNTRY",
+  players_list = players_list[["PLAYER_ID", "PLAYER_NAME", "TEAM_NAME", "POSITION", "HEIGHT", "WEIGHT", "COUNTRY",
                            "BIRTHDATE", "SEASON_EXP", "DRAFT_NUMBER"]]
-  #players_list = players_list.astype({'PLAYER_NAME':'string', 'TEAM_NAME':'string', 'POSITION':'string', 'HEIGHT':'float64',
-  #                                    'WEIGHT': 'float64', 'COUNTRY': 'string', 'BIRTHDATE': 'datetime64',
-  #                                    'SEASON_EXP': 'int64'})
   return players_list
 
 def get_players_personal_information(current_players_list):
 
-  players_list = list(current_players_list["PERSON_ID"])
-  #Check if ids are unique
+  players_list = list(current_players_list["PLAYER_ID"])
   all_players = pd.DataFrame()
-  n=0
   try:
     for player in players_list:
       player_info = commonplayerinfo.CommonPlayerInfo(player_id=player).get_data_frames()
       player_info = player_info[0]
       all_players = pd.concat([all_players,player_info])
       time.sleep(0.5)
-      n += 1
   except:
     pass
-  print(n)
   all_players = clean_players_personal_information(all_players)
   print(all_players.head())
   return all_players
-
+# ================================================================================================================================== #
+import pandas as pd
+from nba_api.stats.endpoints import commonplayerinfo
+current_players_list = pd.read_csv("nba_current_players_list.csv")
 players_personal_info = get_players_personal_information(current_players_list)
 players_personal_info.to_csv("nba_players_personal_info.csv")
-# # ================================================================================================================================== #
-import time
-import pandas as pd
-from nba_api.stats.endpoints import playercareerstats
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
 def get_players_career_stats(current_players_list):
-  players_list = list(current_players_list["PERSON_ID"])
+  players_list = list(current_players_list["PLAYER_ID"])
   print(players_list)
   all_players = pd.DataFrame()
   try:
@@ -90,22 +84,25 @@ def get_players_career_stats(current_players_list):
   print(len(all_players.index))
   print(all_players.head())
   return all_players
-
+# ================================================================================================================================== #
+from nba_api.stats.endpoints import playercareerstats
+import pandas as pd
+import time
 current_players_list = pd.read_csv("nba_current_players_list.csv")
 players_career_stats = get_players_career_stats(current_players_list)
 players_career_stats.to_csv("nba_players_career_stats.csv")
+# ================================================================================================================================== #
+
+
+
 
 # ================================================================================================================================== #
-import time
-import pandas as pd
-import numpy as np
-from nba_api.stats.endpoints import playerprofilev2
 def get_players_next_game(current_players_list):
 
-  players_list = list(current_players_list["PERSON_ID"])
+  players_list = list(current_players_list["PLAYER_ID"])
   all_players_next_game = pd.DataFrame()
   nxt_game_dtf = pd.DataFrame()
-  all_players_next_game['player_id'] = pd.Series([], dtype=int)
+  all_players_next_game['PLAYER_ID'] = pd.Series([], dtype=int)
   all_players_next_game['GAME_DATE'] = pd.Series([], dtype=str)
 
   for player in players_list:
@@ -116,22 +113,23 @@ def get_players_next_game(current_players_list):
       nxt_game_dtf['GAME_DATE'] = np.nan
       print("Player not found")
 
-    nxt_game_dtf['player_id'] = player
+    nxt_game_dtf['PLAYER_ID'] = player
     all_players_next_game = pd.concat([all_players_next_game, nxt_game_dtf])
     time.sleep(0.5)
 
   all_players_next_game['GAME_DATE']=pd.to_datetime(all_players_next_game['GAME_DATE'])
-  all_players_next_game.set_index('PLAYER_ID', inplace=True)
+  #all_players_next_game.set_index('PLAYER_ID', inplace=True)
   return all_players_next_game
-
+# ================================================================================================================================== #
+import time
+import pandas as pd
+import numpy as np
+from nba_api.stats.endpoints import playerprofilev2
 current_players_list = pd.read_csv("nba_current_players_list.csv")
 current_players_list = current_players_list.drop(['Unnamed: 0'], axis=1)
 players_next_game = get_players_next_game(current_players_list)
 print("Done")
 players_next_game.to_csv("nba_players_next_game.csv")
-# ================================================================================================================================== #
-import pandas as pd
-pl_nxt_games = pd.read_csv("nba_players_next_game.csv")
 # ================================================================================================================================== #
 # ### Complete in this cell: find players salary, save the information to csv
 #!pip install chardet
@@ -161,10 +159,7 @@ def get_nba_players_salaries(csv_file_path):
   repo_path = "NBA/"
   if not path.exists(repo_path):
     repo=git.Repo.clone_from('https://github.com/Parac3lsus/Sprint1.git', 'NBA')
-    print("getting repo")
-
   csv_file_path = repo_path + csv_file_path
-  print(csv_file_path)
   # -------------Github-----------------#
   salaries = pd.read_csv(csv_file_path, encoding='utf-8')
   salaries = salaries.drop_duplicates(subset=['Unnamed: 1'])
@@ -182,14 +177,34 @@ def get_nba_players_salaries(csv_file_path):
   for i, row in salaries.iterrows():
     for n, players_row in players_personal_info.iterrows():
       if(name_cleaner(unidecode(row.PLAYER_NAME)) == name_cleaner(unidecode(players_row.PLAYER_NAME))):
-        salaries.loc[i, 'PLAYER_ID'] = int(players_row.PERSON_ID)
+        salaries.loc[i, 'PLAYER_ID'] = int(players_row.PLAYER_ID)
         break
   salaries = salaries[salaries['PLAYER_ID']!=0]
   print(len(salaries.index))
   return salaries
-
+# ================================================================================================================================== #
 import pandas as pd
 players_personal_info = pd.read_csv("nba_players_personal_info.csv")
-players_personal_info.set_index("PERSON_ID")
 players_salaries = get_nba_players_salaries("contracts.csv")
 players_salaries.to_csv("nba_players_salary.csv")
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
+def merge_dataframes(personal_info, career_stats, next_game, salaries):
+  raw_players_dataset = pd.merge(personal_info, career_stats, on='PLAYER_ID')
+  raw_players_dataset = pd.merge(raw_players_dataset, next_game, on='PLAYER_ID')
+  raw_players_dataset = pd.merge(raw_players_dataset, salaries, on='PLAYER_ID')
+  raw_players_dataset.rename(columns={'PLAYER_NAME_x': 'PLAYER_MAME'}, inplace = True)
+  raw_players_dataset = raw_players_dataset.drop(['PLAYER_NAME_y'], axis=1)
+  return raw_players_dataset
+
+import pandas as pd
+current_players_list = pd.read_csv("nba_current_players_list.csv")
+players_personal_info = pd.read_csv("nba_players_personal_info.csv")
+players_career_stats = pd.read_csv("nba_players_career_stats.csv")
+players_next_game = pd.read_csv("nba_players_next_game.csv")
+players_salaires = pd.read_csv("nba_players_salary.csv")
+
+raw_players_dataset = merge_dataframes(players_personal_info, players_career_stats, players_next_game, players_salaries)
