@@ -6,7 +6,6 @@ from nba_api.stats.static import players
 from nba_api.stats.endpoints import commonallplayers
 from nba_api.stats.endpoints import commonplayerinfo
 from nba_api.stats.endpoints import playercareerstats
-from nba_api.stats.endpoints import playernextngames
 from nba_api.stats.endpoints import playerprofilev2
 import time
 import pandas as pd
@@ -132,7 +131,6 @@ print("Done")
 players_next_game.to_csv("nba_players_next_game.csv")
 # ================================================================================================================================== #
 # ### Complete in this cell: find players salary, save the information to csv
-#!pip install chardet
 #!pip install gitpython
 #!pip install unidecode
 def name_cleaner(name):
@@ -196,13 +194,94 @@ def merge_dataframes(personal_info, career_stats, next_game, salaries):
   raw_players_dataset = pd.merge(personal_info, career_stats, on='PLAYER_ID', how='left')
   raw_players_dataset = pd.merge(raw_players_dataset, next_game, on='PLAYER_ID', how='left')
   raw_players_dataset = pd.merge(raw_players_dataset, salaries, on='PLAYER_ID', how='left')
+  raw_players_dataset = raw_players_dataset.rename(columns={'PLAYER_NAME_x': 'PLAYER_NAME'}, inplace= False)
+  raw_players_dataset = raw_players_dataset.drop(columns=['PLAYER_NAME_y'], axis=1)
   return raw_players_dataset
-
+# ================================================================================================================================== #
 import pandas as pd
 current_players_list = pd.read_csv("nba_current_players_list.csv")
 players_personal_info = pd.read_csv("nba_players_personal_info.csv")
 players_career_stats = pd.read_csv("nba_players_career_stats.csv")
 players_next_game = pd.read_csv("nba_players_next_game.csv")
-players_salaires = pd.read_csv("nba_players_salary.csv")
+players_salaries = pd.read_csv("nba_players_salary.csv")
 
 raw_players_dataset = merge_dataframes(players_personal_info, players_career_stats, players_next_game, players_salaries)
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
+def copy_and_delete_nan(players_dataset):
+  return_dataset = players_dataset.copy()
+  return_dataset = return_dataset.dropna(subset=['SALARY'])
+  return_dataset['SALARY'] = return_dataset['SALARY'].astype('int')
+  return_dataset.drop(return_dataset[return_dataset['SALARY'] < 1].index, inplace = True)
+  return_dataset = return_dataset[~return_dataset['TEAM_NAME'].isnull()]
+  return return_dataset
+
+working_df = copy_and_delete_nan(raw_players_dataset)
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
+def cast_columns(working_df):
+  working_df['SALARY'] = working_df['SALARY'].astype('int')
+  working_df['BIRTHDATE'] = working_df['BIRTHDATE'].astype('datetime64')
+  working_df['GAME_DATE'] = working_df['GAME_DATE'].astype('datetime64')
+  return working_df
+
+cast_columns(working_df)
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
+def convert_height_column(working_df):
+  conversions = [30.48, 2.54]
+  cm_height = working_df['HEIGHT'].str.split('-').apply(pd.Series).astype(int).dot(conversions)
+  working_df['HEIGHT'] = cm_height
+  working_df['HEIGHT'] = working_df['HEIGHT'].astype('int')
+  return working_df
+
+convert_height_column(working_df)
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
+def convert_weight_column(working_df):
+  working_df['WEIGHT'] = working_df['WEIGHT'] * 0.453592
+  working_df['WEIGHT'] = working_df['WEIGHT'].astype('int')
+  return working_df
+
+convert_weight_column(working_df)
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
+def get_age(date):
+  import datetime
+  import dateutil
+  now = datetime.datetime.utcnow()
+  now = now.date()
+  age = dateutil.relativedelta.relativedelta(now, date)
+  return str(f'{age.years} years, {age.months} months, {age.days} days')
+
+def add_age_column(working_df):
+  working_df['AGE'] = working_df['BIRTHDATE']
+  working_df['AGE'] = working_df['AGE'].map(get_age)
+  return working_df
+
+add_age_column(working_df)
+# ================================================================================================================================== #
+
+
+
+# ================================================================================================================================== #
+def update_position(working_df):
+  working_df['POSITION'] = working_df['POSITION'].str.split('-', expand=True).iloc[:,0]
+  return working_df
+  pass
+update_position(working_df)
